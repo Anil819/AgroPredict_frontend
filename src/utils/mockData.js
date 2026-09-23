@@ -292,7 +292,7 @@ export const videosData = [
     category: 'Modern Farming',
     duration: '12:45',
     thumbnail: IMAGES.drone,
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
   },
   {
     id: 'vid_002',
@@ -300,7 +300,7 @@ export const videosData = [
     category: 'Soil Health',
     duration: '8:30',
     thumbnail: IMAGES.soil,
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
   },
   {
     id: 'vid_003',
@@ -308,7 +308,7 @@ export const videosData = [
     category: 'Irrigation',
     duration: '15:20',
     thumbnail: IMAGES.irrigation,
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
   },
   {
     id: 'vid_004',
@@ -316,7 +316,7 @@ export const videosData = [
     category: 'Crop Management',
     duration: '10:15',
     thumbnail: IMAGES.harvest,
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
   },
   {
     id: 'vid_005',
@@ -324,7 +324,7 @@ export const videosData = [
     category: 'Disease Prevention',
     duration: '9:50',
     thumbnail: IMAGES.leaves,
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
   },
   {
     id: 'vid_006',
@@ -332,7 +332,7 @@ export const videosData = [
     category: 'Organic Farming',
     duration: '14:30',
     thumbnail: IMAGES.organic,
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
   },
 ]
 

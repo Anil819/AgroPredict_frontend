@@ -2,11 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { SendHorizontal, Bot, User, Trash2 } from 'lucide-react';
 import { chatMessages, suggestedQuestions } from '@/utils/mockData';
+import { chatAPI } from '@/services/api';
+
+const initialChatMessages = chatMessages.map((message) => ({
+  id: message.id,
+  text: message.text || message.content,
+  sender: message.sender || message.role,
+  time: message.time || message.timestamp,
+}));
 
 export default function Chatbot() {
-  const [messages, setMessages] = useState(chatMessages);
+  const [messages, setMessages] = useState(initialChatMessages);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState('');
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -21,26 +30,23 @@ export default function Chatbot() {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleSend = (text) => {
+  const handleSend = async (text) => {
     if (!text.trim()) return;
     
     const newUserMsg = { id: Date.now(), text, sender: 'user', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
     setMessages(prev => [...prev, newUserMsg]);
     setInput('');
     setIsTyping(true);
-
-    setTimeout(() => {
+    setError('');
+    try {
+      const response = await chatAPI.send(text);
       setIsTyping(false);
-      let replyText = "I'm a virtual assistant. Here's a general farming tip: Rotate your crops to maintain soil health!";
-      const lower = text.toLowerCase();
-      if (lower.includes('weather')) replyText = "The weather today is mostly sunny with a high of 28°C. Perfect for field work.";
-      else if (lower.includes('disease') || lower.includes('blight')) replyText = "For Early Blight, ensure good airflow around plants and apply a copper-based fungicide.";
-      else if (lower.includes('yield')) replyText = "Yield looks promising this season based on rainfall data! Expect around 3.2 tons/acre.";
-      else if (lower.includes('irrigate') || lower.includes('water')) replyText = "Soil moisture is currently at 45%. You can hold off on irrigation for another day.";
-
-      const newBotMsg = { id: Date.now() + 1, text: replyText, sender: 'bot', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
+      const newBotMsg = { id: Date.now() + 1, text: response.data.response, sender: 'assistant', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
       setMessages(prev => [...prev, newBotMsg]);
-    }, 1500);
+    } catch (requestError) {
+      setIsTyping(false);
+      setError(requestError.response?.data?.detail || 'The assistant could not respond. Please try again.');
+    }
   };
 
   return (
@@ -97,6 +103,7 @@ export default function Chatbot() {
               </div>
             </div>
           )}
+          {error && <p className="text-center text-sm text-red-500">{error}</p>}
           <div ref={messagesEndRef} />
         </div>
 

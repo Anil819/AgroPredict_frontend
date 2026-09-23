@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Droplets, Wind, CloudRain, Info, AlertTriangle, CheckCircle } from 'lucide-react';
-import { weatherData } from '@/utils/mockData';
+import { MapPin, Droplets, Wind, CloudRain, Search } from 'lucide-react';
+import { weatherAPI } from '@/services/api';
 
 const WeatherCard = ({ day }) => {
   return (
@@ -23,9 +23,53 @@ const WeatherCard = ({ day }) => {
 };
 
 export default function Weather() {
+  const [current, setCurrent] = useState(null);
+  const [forecast, setForecast] = useState([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [city, setCity] = useState('Indore');
+  const [placeQuery, setPlaceQuery] = useState('Indore');
+  const [places, setPlaces] = useState([]);
+
+  const loadWeather = async (selectedCity) => {
+    setLoading(true);
+    setError('');
+    try {
+      const [currentResponse, forecastResponse] = await Promise.all([
+        weatherAPI.current(selectedCity),
+        weatherAPI.forecast(selectedCity),
+      ]);
+      setCurrent(currentResponse.data);
+      setForecast(forecastResponse.data.forecast);
+    } catch (requestError) {
+      setCurrent(null);
+      setForecast([]);
+      setError(requestError.response?.data?.detail || 'Unable to load live weather data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+    loadWeather(city);
+  }, [city]);
+
+  useEffect(() => {
+    if (placeQuery.trim().length < 2 || placeQuery.trim() === city) {
+      setPlaces([]);
+      return undefined;
+    }
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await weatherAPI.searchPlaces(placeQuery);
+        setPlaces(response.data);
+      } catch {
+        setPlaces([]);
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [placeQuery, city]);
 
   return (
     <motion.div 
@@ -38,6 +82,20 @@ export default function Weather() {
           <h1 className="page-header">Weather Forecast</h1>
           <p className="page-subtitle">Real-time weather insights for your farm.</p>
         </div>
+        <div className="relative w-72 max-w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
+          <input value={placeQuery} onChange={(event) => setPlaceQuery(event.target.value)} placeholder="Search city, district, village" className="input-field w-full pl-9 py-2" />
+          {places.length > 0 && (
+            <div className="absolute z-20 top-12 left-0 right-0 rounded-xl border border-surface-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-xl p-2 max-h-64 overflow-y-auto">
+              {places.map((place) => (
+                <button key={`${place.latitude}-${place.longitude}`} type="button" onClick={() => { setCity(place.label); setPlaceQuery(place.label); setPlaces([]); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-dark-bg">
+                  <span className="block text-sm font-medium text-surface-900 dark:text-white">{place.name}</span>
+                  <span className="block text-xs text-surface-500 dark:text-surface-400">{place.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Hero Section */}
@@ -48,14 +106,14 @@ export default function Weather() {
         <div className="relative z-10 p-8">
           <div className="flex items-center space-x-2 text-primary-100 mb-6">
             <MapPin className="w-5 h-5" />
-            <span className="text-lg font-medium">Indore, India</span>
+            <span className="text-lg font-medium">{current?.city || 'Loading...'}, {current?.country || ''}</span>
           </div>
           
           <div className="flex items-end space-x-4 mb-4">
-            <h2 className="text-6xl font-bold">28°C</h2>
+            <h2 className="text-6xl font-bold">{current ? `${current.temperature}°C` : '--'}</h2>
             <div className="pb-1 text-primary-100">
-              <p className="text-xl font-medium">Partly Cloudy</p>
-              <p className="text-sm">Feels like 30°C</p>
+              <p className="text-xl font-medium">{current?.condition || 'Loading weather...'}</p>
+              <p className="text-sm">{current ? `Feels like ${current.feelsLike}°C` : ''}</p>
             </div>
           </div>
         </div>
@@ -69,7 +127,7 @@ export default function Weather() {
           </div>
           <div>
             <p className="text-sm text-surface-500 dark:text-surface-400">Humidity</p>
-            <p className="text-2xl font-bold text-surface-900 dark:text-white">60%</p>
+            <p className="text-2xl font-bold text-surface-900 dark:text-white">{current ? `${current.humidity}%` : '--'}</p>
           </div>
         </div>
         <div className="card flex items-center p-6 space-x-4">
@@ -78,7 +136,7 @@ export default function Weather() {
           </div>
           <div>
             <p className="text-sm text-surface-500 dark:text-surface-400">Wind</p>
-            <p className="text-2xl font-bold text-surface-900 dark:text-white">12 km/h</p>
+            <p className="text-2xl font-bold text-surface-900 dark:text-white">{current ? `${current.wind} km/h` : '--'}</p>
           </div>
         </div>
         <div className="card flex items-center p-6 space-x-4">
@@ -87,7 +145,7 @@ export default function Weather() {
           </div>
           <div>
             <p className="text-sm text-surface-500 dark:text-surface-400">Rain Chance</p>
-            <p className="text-2xl font-bold text-surface-900 dark:text-white">20%</p>
+            <p className="text-2xl font-bold text-surface-900 dark:text-white">{current ? `${current.rainChance}%` : '--'}</p>
           </div>
         </div>
       </div>
@@ -96,37 +154,14 @@ export default function Weather() {
       <div>
         <h3 className="text-xl font-bold text-surface-900 dark:text-white mb-4">7-Day Forecast</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-          {weatherData.forecast.map((day, idx) => (
-            <WeatherCard key={idx} day={day} />
+          {forecast.map((day, idx) => (
+            <WeatherCard key={idx} day={{ ...day, temp: day.high }} />
           ))}
         </div>
       </div>
 
-      {/* Farming Weather Intelligence */}
-      <div>
-        <h3 className="text-xl font-bold text-surface-900 dark:text-white mb-4">Farming Weather Intelligence</h3>
-        <div className="grid gap-4">
-          {weatherData.farmingAdvice.map((advice, idx) => {
-            const isInfo = advice.type === 'info';
-            const isWarning = advice.type === 'warning';
-            const isSuccess = advice.type === 'success';
-
-            const Icon = isWarning ? AlertTriangle : isSuccess ? CheckCircle : Info;
-            const borderColors = isWarning ? 'border-amber-500' : isSuccess ? 'border-green-500' : 'border-blue-500';
-            const iconColors = isWarning ? 'text-amber-500' : isSuccess ? 'text-green-500' : 'text-blue-500';
-
-            return (
-              <div key={idx} className={`card border-l-4 ${borderColors} p-4 flex space-x-4 items-start`}>
-                <Icon className={`w-6 h-6 mt-1 flex-shrink-0 ${iconColors}`} />
-                <div>
-                  <h4 className="font-semibold text-surface-900 dark:text-white">{advice.title}</h4>
-                  <p className="text-surface-600 dark:text-surface-300 mt-1">{advice.message}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {loading && <p className="text-sm text-surface-500">Loading live weather...</p>}
+      {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
     </motion.div>
   );
 }

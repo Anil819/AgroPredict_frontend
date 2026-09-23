@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, CheckCircle, Info } from 'lucide-react';
-import { soilData } from '@/utils/mockData';
+import { AlertTriangle, CheckCircle, Info, Beaker, Droplets, ArrowLeft, Loader2 } from 'lucide-react';
+import api from '@/services/api';
 
 const ParameterCard = ({ name, value, max, unit, status }) => {
-  const percentage = (value / max) * 100;
+  const percentage = Math.min((value / max) * 100, 100);
   const statusColor = status === 'Optimal' ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30' : 
                       status === 'Low' ? 'text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30' : 
                       'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
@@ -29,29 +29,131 @@ const ParameterCard = ({ name, value, max, unit, status }) => {
 };
 
 export default function SoilAnalysis() {
+  const [formData, setFormData] = useState({
+    nitrogen: '',
+    phosphorus: '',
+    potassium: '',
+    ph: '',
+    moisture: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState(null);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const parameters = soilData?.parameters || [
-    { name: 'Nitrogen', value: 45, max: 100, unit: 'kg/ha', status: 'Optimal' },
-    { name: 'Phosphorus', value: 20, max: 100, unit: 'kg/ha', status: 'Low' },
-    { name: 'Potassium', value: 85, max: 100, unit: 'kg/ha', status: 'Optimal' },
-    { name: 'pH Level', value: 6.8, max: 14, unit: '', status: 'Optimal' },
-    { name: 'Organic Carbon', value: 0.8, max: 2, unit: '%', status: 'Low' }
-  ];
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-  const recommendations = soilData?.recommendations || [
-    { priority: 'Medium', title: 'Add Phosphorus Fertilizer', desc: 'Current levels are low. Apply 20kg/ha of DAP to reach optimal levels before sowing.' },
-    { priority: 'Low', title: 'Increase Organic Matter', desc: 'Incorporate crop residue or compost to slowly build up organic carbon over the next season.' },
-    { priority: 'Good', title: 'Maintain Current pH', desc: 'Soil pH is in the excellent range for most cereal crops. No amendments needed.' }
-  ];
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
+    try {
+      const payload = {
+        nitrogen: parseFloat(formData.nitrogen),
+        phosphorus: parseFloat(formData.phosphorus),
+        potassium: parseFloat(formData.potassium),
+        ph: parseFloat(formData.ph),
+        moisture: parseFloat(formData.moisture)
+      };
+
+      const response = await api.post('/soil/analyze', payload);
+      setResult(response.data);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to analyze soil. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!result) {
+    return (
+      <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-8 bg-surface-50 dark:bg-dark-bg min-h-screen">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">Soil Health Analysis</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-lg">Enter your soil test parameters to get a comprehensive health score and AI recommendations.</p>
+        </div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-dark-card rounded-2xl shadow-sm border border-surface-200 dark:border-dark-border p-6 md:p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                {error}
+              </div>
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nitrogen (mg/kg)</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Beaker className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input type="number" step="0.1" required name="nitrogen" value={formData.nitrogen} onChange={handleChange} placeholder="e.g. 45" className="w-full pl-10 pr-4 py-3 bg-surface-50 dark:bg-dark-surface border border-surface-200 dark:border-dark-border rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-all" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Phosphorus (mg/kg)</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Beaker className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input type="number" step="0.1" required name="phosphorus" value={formData.phosphorus} onChange={handleChange} placeholder="e.g. 20" className="w-full pl-10 pr-4 py-3 bg-surface-50 dark:bg-dark-surface border border-surface-200 dark:border-dark-border rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-all" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Potassium (mg/kg)</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Beaker className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input type="number" step="0.1" required name="potassium" value={formData.potassium} onChange={handleChange} placeholder="e.g. 85" className="w-full pl-10 pr-4 py-3 bg-surface-50 dark:bg-dark-surface border border-surface-200 dark:border-dark-border rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-all" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">pH Level</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <AlertTriangle className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input type="number" step="0.1" required name="ph" value={formData.ph} onChange={handleChange} placeholder="e.g. 6.8" className="w-full pl-10 pr-4 py-3 bg-surface-50 dark:bg-dark-surface border border-surface-200 dark:border-dark-border rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-all" />
+                </div>
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Soil Moisture (%)</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Droplets className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input type="number" step="0.1" required name="moisture" value={formData.moisture} onChange={handleChange} placeholder="e.g. 45" className="w-full pl-10 pr-4 py-3 bg-surface-50 dark:bg-dark-surface border border-surface-200 dark:border-dark-border rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-all" />
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" disabled={loading} className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition-all shadow-sm flex justify-center items-center gap-2">
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Analyze Soil Health'}
+            </button>
+          </form>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Dashboard Results View
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 bg-surface-50 dark:bg-dark-bg min-h-screen">
-      <div className="text-center max-w-2xl mx-auto mb-10">
-        <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">Know Your Soil.<br/>Grow With Confidence.</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-lg">Keep it in good shape and unlock stronger farming decisions based on precise data.</p>
+      <div className="flex items-center gap-4 mb-6">
+        <button onClick={() => setResult(null)} className="p-2 bg-white dark:bg-dark-card rounded-lg shadow-sm border border-surface-200 dark:border-dark-border text-slate-600 hover:text-primary-600 transition-colors">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Analysis Results</h1>
       </div>
 
       {/* Large Gauge */}
@@ -63,11 +165,13 @@ export default function SoilAnalysis() {
         <div className="relative w-64 h-64 flex items-center justify-center">
           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-slate-200 dark:text-slate-800" />
-            <circle cx="50" cy="50" r="45" fill="none" stroke="#16A34A" strokeWidth="8" strokeDasharray={`${87 * 2.83} 283`} className="transition-all duration-1000 ease-out drop-shadow-md" />
+            <circle cx="50" cy="50" r="45" fill="none" stroke={result.healthScore >= 70 ? '#16A34A' : result.healthScore >= 50 ? '#F59E0B' : '#EF4444'} strokeWidth="8" strokeDasharray={`${result.healthScore * 2.83} 283`} className="transition-all duration-1000 ease-out drop-shadow-md" />
           </svg>
           <div className="absolute flex flex-col items-center bg-white dark:bg-dark-card p-6 rounded-full shadow-lg border border-surface-100 dark:border-dark-border">
-            <span className="text-5xl font-bold text-slate-900 dark:text-white">87<span className="text-2xl text-slate-400">%</span></span>
-            <span className="text-green-600 dark:text-green-400 font-semibold mt-1">Excellent</span>
+            <span className="text-5xl font-bold text-slate-900 dark:text-white">{result.healthScore}<span className="text-2xl text-slate-400">%</span></span>
+            <span className={`font-semibold mt-1 ${result.healthScore >= 70 ? 'text-green-600' : result.healthScore >= 50 ? 'text-orange-600' : 'text-red-600'}`}>
+              {result.status}
+            </span>
           </div>
         </div>
         <p className="text-slate-500 dark:text-slate-400 mt-6 font-medium">Overall Soil Health Score</p>
@@ -77,9 +181,15 @@ export default function SoilAnalysis() {
       <div>
         <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Current Parameters</h3>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          {parameters.map((param, i) => (
+          {result.parameters.map((param, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-              <ParameterCard {...param} />
+              <ParameterCard 
+                name={param.name} 
+                value={param.value} 
+                max={param.name === 'pH' ? 14 : 100} 
+                unit={param.name === 'pH' ? '' : (param.name === 'Moisture' ? '%' : 'mg/kg')} 
+                status={param.status} 
+              />
             </motion.div>
           ))}
         </div>
@@ -89,7 +199,9 @@ export default function SoilAnalysis() {
       <div>
         <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">AI Recommendations</h3>
         <div className="space-y-4">
-          {recommendations.map((rec, i) => (
+          {result.recommendations.map((rec, i) => {
+            const isWarning = rec.includes('Apply agricultural lime') || rec.includes('Too alkaline');
+            return (
             <motion.div 
               key={i} 
               initial={{ opacity: 0, x: -10 }} 
@@ -97,42 +209,21 @@ export default function SoilAnalysis() {
               transition={{ delay: 0.3 + (i * 0.1) }}
               className="bg-white dark:bg-dark-card p-5 rounded-xl shadow-sm border border-surface-100 dark:border-dark-border flex gap-4 items-start"
             >
-              <div className={`p-2 rounded-full flex-shrink-0 mt-1 ${
-                rec.priority === 'High' ? 'bg-red-100 text-red-600 dark:bg-red-900/30' : 
-                rec.priority === 'Medium' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30' : 
-                'bg-green-100 text-green-600 dark:bg-green-900/30'
-              }`}>
-                {rec.priority === 'High' || rec.priority === 'Medium' ? <AlertTriangle className="h-5 w-5" /> : <CheckCircle className="h-5 w-5" />}
+              <div className={`p-2 rounded-full flex-shrink-0 mt-1 ${isWarning ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30' : 'bg-green-100 text-green-600 dark:bg-green-900/30'}`}>
+                {isWarning ? <AlertTriangle className="h-5 w-5" /> : <CheckCircle className="h-5 w-5" />}
               </div>
               <div>
-                <h4 className="font-semibold text-slate-900 dark:text-white text-lg">{rec.title}</h4>
-                <p className="text-slate-600 dark:text-slate-400 mt-1">{rec.desc}</p>
+                <h4 className="font-semibold text-slate-900 dark:text-white text-lg">Recommendation {i + 1}</h4>
+                <p className="text-slate-600 dark:text-slate-400 mt-1">{rec}</p>
               </div>
-              <span className={`ml-auto text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${
-                rec.priority === 'High' ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:border-red-800' : 
-                rec.priority === 'Medium' ? 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-900/20 dark:border-orange-800' : 
-                'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:border-green-800'
-              }`}>
-                {rec.priority} Priority
-              </span>
             </motion.div>
-          ))}
+          )})}
         </div>
-      </div>
-
-      {/* Bottom Actions */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center py-6">
-        <button className="w-full sm:w-auto px-6 py-3 border border-slate-300 dark:border-dark-border text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-dark-surface font-semibold rounded-lg transition-colors">
-          View Details
-        </button>
-        <button className="w-full sm:w-auto px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors shadow-sm">
-          Get Recommendation
-        </button>
       </div>
 
       <div className="text-center bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 mt-8">
         <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center justify-center gap-2">
-          <Info className="h-4 w-4" /> This system provides AI-based agricultural estimates and recommendations for educational and decision-support purposes.
+          <Info className="h-4 w-4" /> This system provides AI-based agricultural estimates based on your field data inputs.
         </p>
       </div>
     </div>

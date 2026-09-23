@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sprout, Calendar, CloudRain, Thermometer, Droplets, MapPin, TrendingUp, HelpCircle } from 'lucide-react';
+import { Sprout, Calendar, CloudRain, Thermometer, Droplets, MapPin, TrendingUp, HelpCircle, Wind } from 'lucide-react';
 import { cropsList, indianStates, seasonsList, yieldPredictionResult } from '@/utils/mockData';
+import { reportsAPI, weatherAPI } from '@/services/api';
 
 export default function YieldPrediction() {
   const [formData, setFormData] = useState({
@@ -10,6 +11,9 @@ export default function YieldPrediction() {
   });
   const [isPredicting, setIsPredicting] = useState(false);
   const [result, setResult] = useState(null);
+  const [districtWeather, setDistrictWeather] = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState('');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -19,12 +23,31 @@ export default function YieldPrediction() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const loadDistrictWeather = async () => {
+    if (!formData.district.trim()) return;
+    setWeatherLoading(true);
+    setWeatherError('');
+    try {
+      const [currentResponse, forecastResponse] = await Promise.all([
+        weatherAPI.current(`${formData.district}, ${formData.state || 'India'}`),
+        weatherAPI.forecast(`${formData.district}, ${formData.state || 'India'}`),
+      ]);
+      setDistrictWeather({ current: currentResponse.data, forecast: forecastResponse.data.forecast });
+    } catch (error) {
+      setDistrictWeather(null);
+      setWeatherError(error.response?.data?.detail || 'Weather data is unavailable for this district.');
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsPredicting(true);
     setTimeout(() => {
       setIsPredicting(false);
       setResult(yieldPredictionResult);
+      reportsAPI.generate({ title: 'Yield Prediction Report', reportType: 'Yield', predictionId: 'yield-latest', inputData: formData, outputData: yieldPredictionResult }).catch(() => {});
     }, 1500);
   };
 
@@ -60,7 +83,7 @@ export default function YieldPrediction() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1">District</label>
-                <input type="text" name="district" value={formData.district} onChange={handleChange} className="input-field w-full" placeholder="e.g. Pune" required />
+                <input type="text" name="district" value={formData.district} onChange={handleChange} onBlur={loadDistrictWeather} className="input-field w-full" placeholder="e.g. Pune" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1">Season</label>
@@ -91,6 +114,24 @@ export default function YieldPrediction() {
                 <label className="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1">Fertilizer Usage (kg/acre)</label>
                 <input type="number" name="fertilizer" value={formData.fertilizer} onChange={handleChange} className="input-field w-full" placeholder="e.g. 50" required />
               </div>
+              <div className="md:col-span-2 rounded-xl border border-primary-100 dark:border-primary-900/30 bg-primary-50/70 dark:bg-primary-900/10 p-4">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2 text-primary-700 dark:text-primary-300">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-sm font-semibold">District Weather</span>
+                  </div>
+                  {weatherLoading && <span className="text-xs text-surface-500">Loading...</span>}
+                </div>
+                {districtWeather ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div><p className="text-xs text-surface-500">Location</p><p className="font-medium">{districtWeather.current.city}</p></div>
+                    <div><p className="text-xs text-surface-500">Temperature</p><p className="font-medium">{districtWeather.current.temperature}°C</p></div>
+                    <div><p className="text-xs text-surface-500">Humidity</p><p className="font-medium">{districtWeather.current.humidity}%</p></div>
+                    <div><p className="text-xs text-surface-500">Wind</p><p className="font-medium">{districtWeather.current.wind} km/h</p></div>
+                  </div>
+                ) : <p className="text-xs text-surface-500">Enter a district and leave the field to load live weather details.</p>}
+                {weatherError && <p className="mt-2 text-xs text-red-600">{weatherError}</p>}
+              </div>
             </div>
             
             <button type="submit" className="btn-primary w-full py-3 flex items-center justify-center space-x-2" disabled={isPredicting}>
@@ -117,14 +158,14 @@ export default function YieldPrediction() {
               
               <div className="text-center mb-8">
                 <p className="text-sm font-medium text-primary-700 dark:text-primary-400 mb-2 uppercase tracking-wide">Expected Yield</p>
-                <div className="text-5xl font-extrabold text-primary-600 dark:text-primary-500 mb-2">{result.yield}</div>
+                <div className="text-5xl font-extrabold text-primary-600 dark:text-primary-500 mb-2">{result.expectedYield}</div>
                 <p className="text-lg text-surface-600 dark:text-surface-300 font-medium">tons/acre</p>
               </div>
 
               <div className="bg-white dark:bg-dark-surface rounded-xl p-4 shadow-sm mb-6 flex justify-between items-center border border-surface-100 dark:border-dark-border">
                 <div>
                   <p className="text-xs text-surface-500 dark:text-surface-400">Estimated Range</p>
-                  <p className="font-semibold text-surface-900 dark:text-white">{result.range} tons/acre</p>
+                  <p className="font-semibold text-surface-900 dark:text-white">{result.range.min} - {result.range.max} {result.range.unit}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-surface-500 dark:text-surface-400">AI Confidence</p>
@@ -138,7 +179,10 @@ export default function YieldPrediction() {
                   {result.factors.map((factor, idx) => (
                     <div key={idx} className="flex items-start space-x-3 text-sm">
                       <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${factor.impact === 'positive' ? 'bg-green-500' : factor.impact === 'negative' ? 'bg-red-500' : 'bg-gray-400'}`}></div>
-                      <p className="text-surface-700 dark:text-surface-300">{factor.text}</p>
+                      <div>
+                        <p className="font-medium text-surface-800 dark:text-surface-200">{factor.name}</p>
+                        <p className="text-surface-700 dark:text-surface-300">{factor.detail}</p>
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Droplets, Thermometer, CloudRain, Clock, AlertTriangle } from 'lucide-react';
-import { cropsList, soilTypes, irrigationResult } from '@/utils/mockData';
+import { cropsList, soilTypes } from '@/utils/mockData';
+import { mlAPI, reportsAPI } from '@/services/api';
 
 export default function Irrigation() {
   const [formData, setFormData] = useState({
@@ -9,6 +10,7 @@ export default function Irrigation() {
   });
   const [isCalculating, setIsCalculating] = useState(false);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -18,13 +20,21 @@ export default function Irrigation() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsCalculating(true);
-    setTimeout(() => {
+    setError('');
+    try {
+      const response = await mlAPI.recommendIrrigation({ crop: formData.crop, soilMoisture: Number(formData.moisture), temperature: Number(formData.temp), humidity: Number(formData.humidity), rainForecast: formData.rain === 'No Rain' ? 0 : 10, soilType: formData.soil });
+      const recommendation = { action: response.data.action, reason: response.data.reason, waterQuantity: response.data.waterQuantity, bestTime: response.data.bestTime, details: response.data.details.map((item) => `${item.parameter}: ${item.value}`) };
+      setResult(recommendation);
+      reportsAPI.generate({ title: 'Irrigation Recommendation Report', reportType: 'Irrigation', predictionId: 'irrigation-latest', inputData: formData, outputData: recommendation }).catch(() => {});
+    } catch (requestError) {
+      setResult(null);
+      setError(requestError.response?.data?.detail || 'The trained irrigation model could not return a result.');
+    } finally {
       setIsCalculating(false);
-      setResult(irrigationResult);
-    }, 1500);
+    }
   };
 
   return (
@@ -139,7 +149,7 @@ export default function Irrigation() {
           ) : (
             <div className="flex flex-col items-center justify-center text-center text-surface-500 dark:text-surface-400 py-12">
               <Droplets className="w-16 h-16 text-surface-300 dark:text-surface-600 mb-4" />
-              <p>Enter your field conditions to receive a custom irrigation schedule.</p>
+              <p>{error || 'Enter your field conditions to receive a trained-model irrigation result.'}</p>
             </div>
           )}
         </div>

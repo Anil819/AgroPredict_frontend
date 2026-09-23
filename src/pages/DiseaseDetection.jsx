@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, AlertCircle, CheckCircle, ChevronRight, Activity } from 'lucide-react';
-import { diseasePredictionResult } from '@/utils/mockData';
+import { mlAPI, reportsAPI } from '@/services/api';
 
 export default function DiseaseDetection() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -16,16 +17,38 @@ export default function DiseaseDetection() {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
       setResult(null);
+      setError('');
     }
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (!selectedFile) return;
     setIsAnalyzing(true);
-    setTimeout(() => {
+    setError('');
+    try {
+      const response = await mlAPI.detectDisease(selectedFile);
+      setResult(response.data);
+      const imageData = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedFile);
+      });
+      reportsAPI.generate({
+        title: 'Plant Disease Report',
+        reportType: 'Disease',
+        predictionId: 'disease-latest',
+        inputData: { fileName: selectedFile.name, fileType: selectedFile.type, fileSize: selectedFile.size },
+        outputData: response.data,
+        imageData,
+        imageName: selectedFile.name,
+      }).catch(() => {});
+    } catch (requestError) {
+      setResult(null);
+      setError(requestError.response?.data?.detail || 'The trained disease model could not return a result.');
+    } finally {
       setIsAnalyzing(false);
-      setResult(diseasePredictionResult);
-    }, 2500);
+    }
   };
 
   return (
@@ -117,7 +140,7 @@ export default function DiseaseDetection() {
                 <div className="p-4 bg-surface-100 dark:bg-dark-surface rounded-full text-surface-400 dark:text-surface-500">
                   <AlertCircle className="w-12 h-12" />
                 </div>
-                <p className="text-surface-500 dark:text-surface-400">Upload a plant image to detect diseases</p>
+                <p className="text-surface-500 dark:text-surface-400">{error || 'Upload a plant image to detect diseases with the trained model.'}</p>
               </div>
             )}
           </div>

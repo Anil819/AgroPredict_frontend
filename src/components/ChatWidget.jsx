@@ -2,12 +2,21 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatMessages as initialMessages, suggestedQuestions } from '@/utils/mockData';
+import { chatAPI } from '@/services/api';
+
+const normalizedInitialMessages = (initialMessages || []).map((message) => ({
+  id: message.id,
+  sender: message.sender || (message.role === 'assistant' ? 'assistant' : message.role),
+  text: message.text || message.content,
+  timestamp: message.timestamp || message.time,
+}));
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState(initialMessages || []);
+  const [messages, setMessages] = useState(normalizedInitialMessages);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState('');
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -18,7 +27,7 @@ const ChatWidget = () => {
     scrollToBottom();
   }, [messages, isTyping, isOpen]);
 
-  const handleSend = (text) => {
+  const handleSend = async (text) => {
     if (!text.trim()) return;
     
     const userMsg = {
@@ -31,17 +40,21 @@ const ChatWidget = () => {
     setMessages(prev => [...prev, userMsg]);
     setInputValue('');
     setIsTyping(true);
-    
-    setTimeout(() => {
+    setError('');
+    try {
+      const response = await chatAPI.send(text);
       setIsTyping(false);
       const botMsg = {
         id: Date.now() + 1,
         sender: 'assistant',
-        text: 'I can help with that. Based on your farm data, this looks like an issue that requires immediate attention. Would you like me to analyze further?',
+        text: response.data.response,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => [...prev, botMsg]);
-    }, 1500);
+    } catch (requestError) {
+      setIsTyping(false);
+      setError(requestError.response?.data?.detail || 'The assistant could not respond. Please try again.');
+    }
   };
 
   return (
@@ -107,6 +120,7 @@ const ChatWidget = () => {
                     </div>
                   </div>
                 )}
+                {error && <p className="text-center text-sm text-red-500">{error}</p>}
                 <div ref={messagesEndRef} />
               </div>
             </div>

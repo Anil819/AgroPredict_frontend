@@ -45,4 +45,48 @@ export const profileAPI = {
   changePassword: (data) => api.put('/profile/password', data),
 }
 
+export const mlAPI = {
+  recommendCrop: (data) => api.post('/crop/recommend', data),
+  recommendIrrigation: (data) => api.post('/irrigation/recommend', data),
+  detectDisease: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/disease/predict', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+}
+
+export const reportsAPI = {
+  history: () => api.get('/reports/history'),
+  generate: (data = {}) => api.post('/reports/generate', data),
+  get: (id) => api.get(`/reports/${id}`),
+  update: (id, data) => api.put(`/reports/${id}`, data),
+  remove: (id) => api.delete(`/reports/${id}`),
+  view: (id) => api.get(`/reports/${id}/view`, { responseType: 'blob' }),
+  download: (id) => api.get(`/reports/${id}/download`, { responseType: 'blob' }),
+  send: (id) => api.post(`/reports/${id}/send`),
+}
+
+export const notificationsAPI = {
+  list: () => api.get('/notifications'),
+  send: (data) => api.post('/notifications/send', data),
+  markRead: (id) => api.patch(`/notifications/${id}/read`),
+}
+
+export const chatAPI = {
+  send: (message, context = {}) => api.post('/chat', { message, context }),
+}
+
+export const weatherAPI = {
+  status: () => api.get('/weather'),
+  searchPlaces: (query) => api.get('/weather/places', { params: { query } }),
+  current: (city = 'Indore') => api.get('/weather/current', { params: { city } }),
+  forecast: (city = 'Indore') => api.get('/weather/forecast', { params: { city } }),
+}
+
+export const profitAPI = {
+  predict: (data) => api.post('/profit/predict', data),
+}
+
 export default api

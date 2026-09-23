@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Check, ChevronRight, TestTube, Thermometer, Droplets, MapPin } from 'lucide-react';
-import { cropPredictionResult } from '@/utils/mockData';
+import { mlAPI, reportsAPI } from '@/services/api';
 
 export default function CropPrediction() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     nitrogen: '', phosphorus: '', potassium: '', ph: '',
     temperature: '', humidity: '', rainfall: ''
@@ -19,25 +20,26 @@ export default function CropPrediction() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePredict = (e) => {
+  const handlePredict = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate AI prediction delay
-    setTimeout(() => {
-      setResult(cropPredictionResult || {
-        crop: 'WHEAT',
-        confidence: 94,
-        status: 'Excellent Match',
-        checks: [
-          'Suitable soil pH (6.5)',
-          'Optimal temperature range',
-          'Sufficient nutrient levels',
-          'Adequate historical rainfall'
-        ],
-        alternatives: ['Barley', 'Mustard', 'Gram']
+    setError('');
+    try {
+      const response = await mlAPI.recommendCrop({
+        n: Number(formData.nitrogen), p: Number(formData.phosphorus),
+        k: Number(formData.potassium), ph: Number(formData.ph),
+        temperature: Number(formData.temperature), humidity: Number(formData.humidity),
+        rainfall: Number(formData.rainfall),
       });
+      const predictionResult = { crop: response.data.crop, confidence: response.data.confidence, status: response.data.matchQuality, checks: response.data.details.map((item) => `${item.parameter}: ${item.status}`), alternatives: response.data.alternativeCrops };
+      setResult(predictionResult);
+      reportsAPI.generate({ title: 'Crop Recommendation Report', reportType: 'Crop', predictionId: 'crop-latest', inputData: formData, outputData: predictionResult }).catch(() => {});
+    } catch (requestError) {
+      setResult(null);
+      setError(requestError.response?.data?.detail || 'The trained crop model could not return a result.');
+    } finally {
       setLoading(false);
-    }, 2000);
+    }
   };
 
   return (
@@ -162,7 +164,7 @@ export default function CropPrediction() {
             <div className="w-full bg-slate-50 dark:bg-dark-surface rounded-2xl p-8 border-2 border-dashed border-slate-200 dark:border-dark-border flex flex-col items-center justify-center min-h-[400px] text-center">
               <MapPin className="h-16 w-16 text-slate-300 dark:text-slate-600 mb-4" />
               <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">Ready to predict</h3>
-              <p className="text-slate-500 max-w-sm">Enter your land parameters on the left and click Predict to see AI recommendations for your next harvest.</p>
+              <p className="text-slate-500 max-w-sm">{error || 'Enter your land parameters on the left and click Predict to see the trained model recommendation.'}</p>
             </div>
           )}
         </motion.div>
