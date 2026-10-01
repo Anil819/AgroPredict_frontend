@@ -3,28 +3,30 @@ import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Wheat, Layers, CloudSun, Scan, TrendingUp, Droplets, IndianRupee, Bot, History, FileText, Play, User, Settings, LogOut, X } from 'lucide-react';
 import Logo from './Logo';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '@/context/LanguageContext';
 
 const Sidebar = ({ isOpen, onClose }) => {
+  const { t } = useLanguage();
   const mainLinks = [
-    { icon: LayoutDashboard, name: 'Dashboard', path: '/dashboard' },
-    { icon: Wheat, name: 'Crop Prediction', path: '/crop-prediction' },
-    { icon: Layers, name: 'Soil Analysis', path: '/soil-analysis' },
-    { icon: CloudSun, name: 'Weather', path: '/weather' },
-    { icon: Scan, name: 'Disease Detection', path: '/disease-detection' },
-    { icon: TrendingUp, name: 'Yield Prediction', path: '/yield-prediction' },
-    { icon: Droplets, name: 'Irrigation', path: '/irrigation' },
-    { icon: IndianRupee, name: 'Profit Prediction', path: '/profit-prediction' },
-    { icon: Bot, name: 'AI Assistant', path: '/chatbot' },
+    { icon: LayoutDashboard, name: t('dashboard'), path: '/dashboard' },
+    { icon: Wheat, name: t('cropPrediction'), path: '/crop-prediction' },
+    { icon: Layers, name: t('soilAnalysis'), path: '/soil-analysis' },
+    { icon: CloudSun, name: t('weather'), path: '/weather' },
+    { icon: Scan, name: t('diseaseDetection'), path: '/disease-detection' },
+    { icon: TrendingUp, name: t('yieldPrediction'), path: '/yield-prediction' },
+    { icon: Droplets, name: t('irrigation'), path: '/irrigation' },
+    { icon: IndianRupee, name: t('profitPrediction'), path: '/profit-prediction' },
+    { icon: Bot, name: t('aiAssistant'), path: '/chatbot' },
   ];
   const secondaryLinks = [
-    { icon: History, name: 'Prediction History', path: '/prediction-history' },
-    { icon: FileText, name: 'Reports', path: '/reports' },
-    { icon: Play, name: 'Videos', path: '/videos' },
+    { icon: History, name: t('predictionHistory'), path: '/prediction-history' },
+    { icon: FileText, name: t('reports'), path: '/reports' },
+    { icon: Play, name: t('videos'), path: '/videos' },
   ];
   const userLinks = [
-    { icon: User, name: 'Profile', path: '/profile' },
-    { icon: Settings, name: 'Settings', path: '/settings' },
-    { icon: LogOut, name: 'Logout', path: '/logout' },
+    { icon: User, name: t('profile'), path: '/profile' },
+    { icon: Settings, name: t('settings'), path: '/settings' },
+    { icon: LogOut, name: t('logout'), path: '/logout' },
   ];
 
   const SidebarContent = () => (

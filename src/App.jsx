@@ -5,6 +5,9 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import PublicLayout from '@/layouts/PublicLayout';
 import DashboardLayout from '@/layouts/DashboardLayout';
 
+// Language
+import { LanguageProvider } from '@/context/LanguageContext';
+
 // Components
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -49,7 +52,7 @@ const ScrollToTop = () => {
 
 const App = () => {
   return (
-    <>
+    <LanguageProvider>
       <ScrollToTop />
       <Suspense fallback={<LoadingSpinner fullScreen />}>
         <Routes>
@@ -91,7 +94,7 @@ const App = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
-    </>
+    </LanguageProvider>
   );
 };
 

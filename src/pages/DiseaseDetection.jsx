@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, AlertCircle, CheckCircle, ChevronRight, Activity } from 'lucide-react';
 import { mlAPI, reportsAPI } from '@/services/api';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function DiseaseDetection() {
+  const { lang, t } = useLanguage();
   const [selectedFile, setSelectedFile] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
@@ -26,7 +28,7 @@ export default function DiseaseDetection() {
     setIsAnalyzing(true);
     setError('');
     try {
-      const response = await mlAPI.detectDisease(selectedFile);
+      const response = await mlAPI.detectDisease(selectedFile, lang);
       setResult(response.data);
       const imageData = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -57,9 +59,9 @@ export default function DiseaseDetection() {
       animate={{ opacity: 1, y: 0 }}
       className="max-w-6xl mx-auto space-y-8"
     >
-      <div className="text-center md:text-left mb-8">
+      <div className="text-left mb-8">
         <h1 className="text-4xl font-bold text-surface-900 dark:text-white whitespace-pre-line">
-          {'See The Problem\nBefore It Spreads.'}
+          {t('seeTheProblem')}
         </h1>
         <p className="text-lg text-surface-600 dark:text-surface-300 mt-4 max-w-2xl">
           Upload a clear image of your plant's leaf, and our AI will detect early signs of diseases and recommend the right actions.
@@ -69,11 +71,11 @@ export default function DiseaseDetection() {
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Left Column - Upload */}
         <div className="card p-6">
-          <h2 className="text-xl font-semibold text-surface-900 dark:text-white mb-4">Upload Leaf Image</h2>
+          <h2 className="text-xl font-semibold text-surface-900 dark:text-white mb-4">{t('uploadLeafImage')}</h2>
           
           <div className="border-2 border-dashed border-surface-300 dark:border-dark-border rounded-xl p-8 flex flex-col items-center justify-center bg-surface-50 dark:bg-dark-surface cursor-pointer hover:border-primary-500 transition-colors" onClick={() => document.getElementById('file-upload').click()}>
             <Upload className="w-12 h-12 text-surface-400 dark:text-surface-500 mb-4" />
-            <p className="text-surface-700 dark:text-surface-200 font-medium mb-1">Click to upload or drag and drop</p>
+            <p className="text-surface-700 dark:text-surface-200 font-medium mb-1">{t('clickToUpload')}</p>
             <p className="text-sm text-surface-500 dark:text-surface-400 text-center">SVG, PNG, JPG or GIF (max. 800x400px)</p>
             <input id="file-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
           </div>
@@ -81,7 +83,7 @@ export default function DiseaseDetection() {
           {selectedFile && (
             <div className="mt-4 p-3 bg-surface-100 dark:bg-dark-surface rounded-lg flex items-center justify-between">
               <span className="text-sm font-medium text-surface-700 dark:text-surface-200 truncate pr-4">{selectedFile.name}</span>
-              <button className="text-sm text-red-500 hover:text-red-700" onClick={() => setSelectedFile(null)}>Remove</button>
+              <button className="text-sm text-red-500 hover:text-red-700" onClick={() => setSelectedFile(null)}>{t('remove')}</button>
             </div>
           )}
 
@@ -90,19 +92,19 @@ export default function DiseaseDetection() {
             disabled={!selectedFile || isAnalyzing}
             onClick={handleAnalyze}
           >
-            {isAnalyzing ? 'Analyzing leaf image...' : 'Analyze Image'}
+            {isAnalyzing ? t('analyzingImage') : t('analyzeImage')}
           </button>
         </div>
 
         {/* Right Column - Results */}
         <div className="card p-6 flex flex-col">
-          <h2 className="text-xl font-semibold text-surface-900 dark:text-white mb-4">AI Diagnosis</h2>
+          <h2 className="text-xl font-semibold text-surface-900 dark:text-white mb-4">{t('aiDiagnosis')}</h2>
           
           <div className="flex-1 flex flex-col justify-center">
             {isAnalyzing ? (
               <div className="flex flex-col items-center justify-center space-y-4 py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-100 border-t-primary-600"></div>
-                <p className="text-surface-600 dark:text-surface-300 font-medium animate-pulse">Analyzing leaf image...</p>
+                <p className="text-surface-600 dark:text-surface-300 font-medium animate-pulse">{t('analyzingImage')}</p>
               </div>
             ) : result ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -111,10 +113,10 @@ export default function DiseaseDetection() {
                     <h3 className="text-2xl font-bold text-surface-900 dark:text-white">{result.disease}</h3>
                     <div className="flex items-center space-x-3 mt-2">
                       <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                        {result.confidence}% Confidence
+                        {result.confidence}% {t('confidence')}
                       </span>
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${result.severity === 'High' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                        {result.severity} Severity
+                        {result.severity} {t('severity')}
                       </span>
                     </div>
                   </div>
@@ -126,7 +128,7 @@ export default function DiseaseDetection() {
                 <div className="bg-surface-50 dark:bg-dark-surface p-4 rounded-xl border border-surface-200 dark:border-dark-border">
                   <h4 className="font-semibold text-surface-900 dark:text-white mb-3 flex items-center">
                     <Activity className="w-5 h-5 mr-2 text-primary-600" />
-                    Recommended Actions
+                    {t('recommendedActions')}
                   </h4>
                   <ol className="space-y-2 list-decimal list-inside text-surface-600 dark:text-surface-300">
                     {result.recommendations.map((rec, idx) => (
@@ -140,7 +142,7 @@ export default function DiseaseDetection() {
                 <div className="p-4 bg-surface-100 dark:bg-dark-surface rounded-full text-surface-400 dark:text-surface-500">
                   <AlertCircle className="w-12 h-12" />
                 </div>
-                <p className="text-surface-500 dark:text-surface-400">{error || 'Upload a plant image to detect diseases with the trained model.'}</p>
+                <p className="text-surface-500 dark:text-surface-400">{error || t('uploadPrompt')}</p>
               </div>
             )}
           </div>

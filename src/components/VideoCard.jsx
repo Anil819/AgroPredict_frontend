@@ -4,8 +4,13 @@ import { motion } from 'framer-motion';
 
 const VideoCard = ({ video, title, thumbnail, duration, category, url }) => {
   const item = video || { title, thumbnail, duration, category, url };
-  const videoId = item.url?.match(/[?&]v=([^&]+)/)?.[1];
-  const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : item.url;
+  let embedUrl = item.url;
+  const ytMatch = item.url?.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+  
+  if (ytMatch && ytMatch[1]) {
+    embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+  }
+
   return (
     <motion.a 
       href={embedUrl} target="_blank" rel="noopener noreferrer"

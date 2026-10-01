@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { SendHorizontal, Bot, User, Trash2 } from 'lucide-react';
 import { chatMessages, suggestedQuestions } from '@/utils/mockData';
 import { chatAPI } from '@/services/api';
+import { useLanguage } from '@/context/LanguageContext';
 
 const initialChatMessages = chatMessages.map((message) => ({
   id: message.id,
@@ -12,6 +13,7 @@ const initialChatMessages = chatMessages.map((message) => ({
 }));
 
 export default function Chatbot() {
+  const { lang, t } = useLanguage();
   const [messages, setMessages] = useState(initialChatMessages);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -39,7 +41,7 @@ export default function Chatbot() {
     setIsTyping(true);
     setError('');
     try {
-      const response = await chatAPI.send(text);
+      const response = await chatAPI.send(text, {}, lang);
       setIsTyping(false);
       const newBotMsg = { id: Date.now() + 1, text: response.data.response, sender: 'assistant', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
       setMessages(prev => [...prev, newBotMsg]);
@@ -60,10 +62,11 @@ export default function Chatbot() {
             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-dark-bg rounded-full"></div>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-surface-900 dark:text-white">AgroPredict AI Assistant</h1>
-            <p className="text-xs text-green-600 dark:text-green-400 font-medium">Online</p>
+            <h1 className="text-xl font-bold text-surface-900 dark:text-white">{t('aiAssistantTitle')}</h1>
+            <p className="text-xs text-green-600 dark:text-green-400 font-medium">{t('online')}</p>
           </div>
         </div>
+        
         <button onClick={() => setMessages([])} className="p-2 text-surface-500 hover:text-red-500 transition-colors" title="Clear Chat">
           <Trash2 className="w-5 h-5" />
         </button>
@@ -113,7 +116,7 @@ export default function Chatbot() {
               type="text" 
               value={input} 
               onChange={(e) => setInput(e.target.value)} 
-              placeholder="Ask anything about farming..." 
+              placeholder={t('typeMessage')} 
               className="input-field flex-1 !rounded-full"
             />
             <button type="submit" disabled={!input.trim()} className="p-3 bg-primary-600 text-white rounded-full hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">

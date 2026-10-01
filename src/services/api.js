@@ -48,9 +48,11 @@ export const profileAPI = {
 export const mlAPI = {
   recommendCrop: (data) => api.post('/crop/recommend', data),
   recommendIrrigation: (data) => api.post('/irrigation/recommend', data),
-  detectDisease: (file) => {
+  predictYield: (data) => api.post('/yield/predict', data),
+  detectDisease: (file, language = 'English') => {
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('language', language)
     return api.post('/disease/predict', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
@@ -75,7 +77,7 @@ export const notificationsAPI = {
 }
 
 export const chatAPI = {
-  send: (message, context = {}) => api.post('/chat', { message, context }),
+  send: (message, context = {}, language = 'English') => api.post('/chat', { message, context, language }),
 }
 
 export const weatherAPI = {

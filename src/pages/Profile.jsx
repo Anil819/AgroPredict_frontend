@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { Camera, MapPin, User, Mail, Phone, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { NavLink } from 'react-router-dom';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function Profile() {
   const { user, updateProfile } = useAuth();
+  const { lang, setLang, t } = useLanguage();
   const [formData, setFormData] = useState({
     name: user?.name || user?.fullName || '',
     email: user?.email || '',
@@ -171,12 +173,23 @@ export default function Profile() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-surface-700 dark:text-surface-200 mb-1">Preferred Language</label>
-                <select name="language" value={formData.language} onChange={handleChange} className="input-field w-full">
-                  <option value="English">English</option>
-                  <option value="Hindi">Hindi</option>
-                  <option value="Marathi">Marathi</option>
-                </select>
+                <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">{t('preferredLanguage')}</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[{ value: 'English', label: 'English' }, { value: 'Hindi', label: 'हिंदी' }].map(l => (
+                    <button
+                      key={l.value}
+                      type="button"
+                      onClick={() => setLang(l.value)}
+                      className={`py-2 px-4 rounded-xl border-2 font-semibold transition-all ${
+                        lang === l.value
+                          ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-700'
+                          : 'border-surface-200 dark:border-dark-border text-surface-600 dark:text-surface-300 hover:border-primary-300'
+                      }`}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -221,7 +234,7 @@ export default function Profile() {
 
             <div className="pt-6 flex justify-end">
               <button type="submit" disabled={isSaving} className="btn-primary px-8 disabled:opacity-70 disabled:cursor-not-allowed">
-                {isSaving ? 'Saving...' : 'Save Changes'}
+                {isSaving ? 'Saving...' : t('saveChanges')}
               </button>
             </div>
           </form>

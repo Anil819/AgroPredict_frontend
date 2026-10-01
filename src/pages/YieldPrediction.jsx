@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sprout, Calendar, CloudRain, Thermometer, Droplets, MapPin, TrendingUp, HelpCircle, Wind } from 'lucide-react';
 import { cropsList, indianStates, seasonsList, yieldPredictionResult } from '@/utils/mockData';
-import { reportsAPI, weatherAPI } from '@/services/api';
+import { reportsAPI, weatherAPI, mlAPI } from '@/services/api';
 
 export default function YieldPrediction() {
   const [formData, setFormData] = useState({
@@ -41,14 +41,29 @@ export default function YieldPrediction() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsPredicting(true);
-    setTimeout(() => {
+    try {
+      const response = await mlAPI.predictYield({
+        crop: formData.crop,
+        area: parseFloat(formData.area),
+        state: formData.state,
+        district: formData.district,
+        season: formData.season,
+        rainfall: parseFloat(formData.rainfall),
+        temperature: parseFloat(formData.temperature),
+        fertilizer: parseFloat(formData.fertilizer),
+        irrigation: formData.irrigation
+      });
+      setResult(response.data);
+      reportsAPI.generate({ title: 'Yield Prediction Report', reportType: 'Yield', predictionId: 'yield-latest', inputData: formData, outputData: response.data }).catch(() => {});
+    } catch (error) {
+      console.error("Yield prediction error", error);
+      alert(error.response?.data?.detail || "Failed to predict yield.");
+    } finally {
       setIsPredicting(false);
-      setResult(yieldPredictionResult);
-      reportsAPI.generate({ title: 'Yield Prediction Report', reportType: 'Yield', predictionId: 'yield-latest', inputData: formData, outputData: yieldPredictionResult }).catch(() => {});
-    }, 1500);
+    }
   };
 
   return (

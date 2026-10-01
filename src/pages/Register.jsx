@@ -122,11 +122,22 @@ export default function Register() {
               <input type="text" name="village" value={formData.village} onChange={handleChange} placeholder="Village" className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-dark-border bg-transparent dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-600" />
             </div>
 
-            <select name="language" value={formData.language} onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-dark-border bg-transparent dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-600">
-              <option value="English">English</option>
-              <option value="Hindi">Hindi</option>
-              <option value="Hinglish">Hinglish</option>
-            </select>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">🌐 Choose Your Language / अपनी भाषा चुनें</label>
+              <div className="grid grid-cols-2 gap-3">
+                {[{ value: 'English', label: 'English', sub: 'English' }, { value: 'Hindi', label: 'हिंदी', sub: 'Hindi' }].map(lang => (
+                  <label key={lang.value} className={`flex flex-col items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                    formData.language === lang.value
+                      ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
+                      : 'border-slate-200 dark:border-dark-border hover:border-primary-300'
+                  }`}>
+                    <input type="radio" name="language" value={lang.value} checked={formData.language === lang.value} onChange={handleChange} className="hidden" />
+                    <span className="text-2xl font-bold text-slate-800 dark:text-white">{lang.label}</span>
+                    <span className="text-xs text-slate-500 mt-0.5">{lang.sub}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
             <div className="pt-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Account Type</label>

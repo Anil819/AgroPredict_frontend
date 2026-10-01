@@ -16,10 +16,18 @@ export default function Videos() {
   const filteredVideos = activeCat === 'All' ? videosData : videosData.filter(v => v.category === activeCat);
 
   const selectVideo = (video) => {
-    const videoId = video.url?.match(/[?&]v=([^&]+)/)?.[1];
+    let embedUrl = video.url;
+    // Robust regex to match both youtube.com/watch?v=ID and youtu.be/ID share links
+    const ytMatch = video.url?.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+    
+    if (ytMatch && ytMatch[1]) {
+      // Automatically append ?autoplay=1 for YouTube embeds
+      embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+    }
+
     setSelectedVideo({
       ...video,
-      embedUrl: videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : video.url,
+      embedUrl,
     });
   };
 
